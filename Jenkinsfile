@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    REMOTE_HOST = "35.77.89.158"
+    REMOTE_HOST = "ec2-54-206-91-241.ap-southeast-2.compute.amazonaws.com"
     REMOTE_USER = "ubuntu"
     REMOTE_PATH = "/home/ubuntu/deploy/app"
   }
