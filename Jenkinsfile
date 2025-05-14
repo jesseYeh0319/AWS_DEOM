@@ -2,24 +2,34 @@ pipeline {
   agent any
 
   environment {
-    REMOTE_HOST = "ec2-54-206-91-241.ap-southeast-2.compute.amazonaws.com"
-    REMOTE_USER = "ubuntu"
-    REMOTE_PATH = "/home/ubuntu/deploy/app"
+    REMOTE_USER = 'ubuntu'
+    REMOTE_HOST = 'ec2-3-107-47-79.ap-southeast-2.compute.amazonaws.com'
+    SSH_KEY_ID = 'ec2-ssh-key'
   }
 
   stages {
-    stage('Build') {
+    stage('打包') {
       steps {
         sh 'mvn clean package -DskipTests'
       }
     }
 
-    stage('Deploy') {
+    stage('上傳 JAR') {
       steps {
-        sshagent(['ec2-ssh-key']) {
-          sh """
-            scp -o StrictHostKeyChecking=no target/*.jar ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/
-          """
+        sshagent (credentials: ["${SSH_KEY_ID}"]) {
+          sh '''
+            scp -o StrictHostKeyChecking=no target/app.jar ${REMOTE_USER}@${REMOTE_HOST}:/home/ubuntu/app.jar
+          '''
+        }
+      }
+    }
+
+    stage('遠端重啟服務') {
+      steps {
+        sshagent (credentials: ["${SSH_KEY_ID}"]) {
+          sh '''
+            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'bash /home/ubuntu/restart.sh'
+          '''
         }
       }
     }
