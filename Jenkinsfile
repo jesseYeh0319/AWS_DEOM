@@ -1,37 +1,36 @@
+properties([
+  pipelineTriggers([
+    [$class: 'GenericTrigger',
+      token: 'github-actions-token',
+      genericVariables: [
+        [key: 'from', value: '$.from'],
+        [key: 'branch', value: '$.branch']
+      ],
+      causeString: 'Triggered from GitHub Actions',
+      printContributedVariables: true
+    ]
+  ])
+])
+
 pipeline {
   agent any
 
-  environment {
-    REMOTE_USER = 'ubuntu'
-    REMOTE_HOST = 'ec2-3-107-47-79.ap-southeast-2.compute.amazonaws.com'
-    SSH_KEY_ID = 'ec2-ssh-key'
+  stages {
+    stage('Deploy') {
+      steps {
+        echo "🚀 接收到 GitHub Actions 來的 webhook！"
+        echo "分支名稱：${env.branch}"
+      }
+    }
   }
 
-  stages {
-    stage('打包') {
-      steps {
-        sh 'mvn clean package -DskipTests'
-      }
+  post {
+    success {
+      echo "✅ 部署成功，已回報"
     }
-
-    stage('上傳 JAR') {
-      steps {
-        sshagent (credentials: ["${SSH_KEY_ID}"]) {
-          sh '''
-            scp -o StrictHostKeyChecking=no target/app.jar ${REMOTE_USER}@${REMOTE_HOST}:/home/ubuntu/app.jar
-          '''
-        }
-      }
-    }
-
-    stage('遠端重啟服務') {
-      steps {
-        sshagent (credentials: ["${SSH_KEY_ID}"]) {
-          sh '''
-            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'bash /home/ubuntu/restart.sh'
-          '''
-        }
-      }
+    failure {
+      echo "❌ 部署失敗，請檢查 log"
     }
   }
 }
+

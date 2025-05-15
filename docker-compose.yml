@@ -1,0 +1,59 @@
+services:
+  nginx:
+    build:
+      context: ./nginx     # 指向 Dockerfile 所在資料夾
+    restart: "no"
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    networks:
+      - backend
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT}:8082"
+    expose:
+      - "8082"
+    depends_on:
+      - db
+    restart: "no"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+    networks:
+      - backend
+
+  db:
+    image: postgres:14
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${DB_VOLUME_NAME}:/var/lib/postgresql/data      
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  pg_data_dev:
+  pg_data_prod:
+
+networks:
+   backend:
+
